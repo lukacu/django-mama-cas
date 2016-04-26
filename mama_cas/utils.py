@@ -65,8 +65,17 @@ class ServiceConfig(object):
         return bool(self.get_config(s))
 
 
-services = ServiceConfig()
+def get_services():
+    """
+    Creates a new service config object based on the 
+    MAMA_CAS_SERVICE_CONFIG setting.
+    """
+    service_config = getattr(settings, 'MAMA_CAS_SERVICE_CONFIG', 'mama_cas.utils.ServiceConfig')
+    (module_name, sep, config_class) = service_config.rpartition(".")
+    module = __import__(module_name, fromlist=[config_class])
+    return getattr(module, config_class)()
 
+services = get_services()
 
 def add_query_params(url, params):
     """
