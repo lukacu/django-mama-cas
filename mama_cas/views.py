@@ -28,6 +28,7 @@ from mama_cas.response import SamlValidationResponse
 from mama_cas.utils import add_query_params
 from mama_cas.utils import clean_service_url
 from mama_cas.utils import is_valid_service
+from mama_cas.utils import is_allowed_service
 from mama_cas.utils import redirect
 from mama_cas.utils import to_bool
 
@@ -78,12 +79,15 @@ class LoginView(CsrfProtectMixin, NeverCacheMixin, FormView):
                 return redirect(service)
         elif request.user.is_authenticated():
             if service:
-                logger.debug("Service ticket request received by credential requestor")
-                st = ServiceTicket.objects.create_ticket(service=service, user=request.user)
-                if self.warn_user():
-                    return redirect('cas_warn', params={'service': service,
-                                                        'ticket': st.ticket})
-                return redirect(service, params={'ticket': st.ticket})
+                if is_allowed_service(request.user, service):
+                    logger.debug("Service ticket request received by credential requestor")
+                    st = ServiceTicket.objects.create_ticket(service=service, user=request.user)
+                    if self.warn_user():
+                        return redirect('cas_warn', params={'service': service,
+                                                            'ticket': st.ticket})
+                    return redirect(service, params={'ticket': st.ticket})
+                else:
+                    messages.error(request, _("You are not allowed to use this service"))
             else:
                 msg = _("You are logged in as %s") % request.user
                 messages.success(request, msg)

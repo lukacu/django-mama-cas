@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class ServiceConfig(object):
+
     @cached_property
     def services(self):
         services = []
@@ -52,6 +53,9 @@ class ServiceConfig(object):
             services.append(service)
 
         return services
+
+    def is_allowed(self, s, user):
+        return True
 
     def get_config(self, s):
         for service in self.services:
@@ -122,6 +126,14 @@ def match_service(service1, service2):
         return (s1.scheme, s1.netloc, s1.path) == (s2.scheme, s2.netloc, s2.path)
     except ValueError:
         return False
+
+def is_allowed_service(user, service):
+    """
+    Check if the provided user is allowed to use the provided service.
+    """
+    if not service:
+        return False
+    return services.is_allowed(service, user)
 
 
 def is_valid_service(service):
