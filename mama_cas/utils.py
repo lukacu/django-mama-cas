@@ -68,6 +68,35 @@ class ServiceConfig(object):
             return True
         return bool(self.get_config(s))
 
+    def is_proxy_allowed(self, s):
+        service = self.get_config(s)
+        if not service:
+            return False
+        try:
+            return service['PROXY_ALLOW']
+        except KeyError:
+            return False
+
+    def is_proxy_callback_valid(self, s, pgturl):
+        service = self.get_config(s)
+        if not service:
+            return False
+        try:
+            return service['PROXY_PATTERN'].match(pgturl)
+        except KeyError:
+            # TODO For transitional backwards compatibility, check against valid services
+            if is_valid_service(pgturl):
+                return True
+            return False
+
+    def get_callbacks(self, s):
+        service = self.get_config(s)
+        if not service:
+            return False
+        try:
+            return service['CALLBACKS']
+        except KeyError:
+            return []
 
 def get_services():
     """
@@ -151,10 +180,9 @@ def can_proxy_authentication(service):
     Return the configured proxy policy for the given service. If no
     policy exists, return `False`.
     """
-    try:
-        return services.get_config(service)['PROXY_ALLOW']
-    except KeyError:
+    if not service:
         return False
+    return services.is_proxy_allowed(service)
 
 
 def is_valid_proxy_callback(service, pgturl):
@@ -162,24 +190,17 @@ def is_valid_proxy_callback(service, pgturl):
     Check the provided proxy callback against the configured allowable
     callback pattern. If no pattern is configured, return `True`.
     """
-    try:
-        return services.get_config(service)['PROXY_PATTERN'].match(pgturl)
-    except KeyError:
-        # TODO For transitional backwards compatibility, check against valid services
-        if is_valid_service(pgturl):
-            return True
+    if not service:
         return False
-
+    return services.is_proxy_callback_valid(service, pgturl)
 
 def get_callbacks(service):
     """
     Return the configured callback functions for the given service.
     """
-    try:
-        return services.get_config(service)['CALLBACKS']
-    except KeyError:
+    if not service:
         return []
-
+    return services.get_callbacks(service)
 
 def redirect(to, *args, **kwargs):
     """
